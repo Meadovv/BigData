@@ -5,6 +5,7 @@ import scrapy
 from scrapy.http import Request
 from scrapy_playwright.page import PageMethod
 from batdongsan.items import BatdongsanItem
+import datetime
 
 click_show_more_script = """
 const button = document.getElementById('btn-load-more');
@@ -171,6 +172,7 @@ class GulandSpiderSpider(scrapy.Spider):
         bds_item['extra_infos'] = extra_infos
 
         bds_item['link'] = response.url
+        bds_item['crawl_date'] = datetime.datetime.now().strftime('%Y-%m-%d')
         yield bds_item
 
     async def _errback(self, failure):

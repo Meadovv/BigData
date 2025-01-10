@@ -19,3 +19,4 @@ class BatdongsanItem(scrapy.Item):
     contact_info = Field()
     extra_infos = Field()
     link = Field()
+    crawl_date = Field()
