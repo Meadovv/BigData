@@ -1,0 +1,394 @@
+version: "3"
+
+services:
+  # HDFS
+  namenode:
+    image: haihp02/hadoop-namenode:latest
+    container_name: namenode
+    restart: always
+    ports:
+      - 9870:9870
+      - 9000:9000
+    volumes:
+      - ./data/hadoop/namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=houses
+    env_file:
+      - ./hadoop.env
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.2
+  datanode1:
+    image: haihp02/hadoop-datanode:latest
+    container_name: datanode1
+    hostname: datanode1
+    restart: always
+    ports:
+      - 19866:19866
+      - 19864:19864
+    depends_on:
+      - namenode
+    volumes:
+      - ./data/hadoop/datanode/node_1:/hadoop/dfs/data
+    environment:
+      - HDFS_CONF_dfs_datanode_address=0.0.0.0:19866
+      - HDFS_CONF_dfs_datanode_http_address=0.0.0.0:19864
+      - SERVICE_PRECONDITION=namenode:9870
+    env_file:
+      - ./hadoop.env
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.3
+  datanode2:
+    image: haihp02/hadoop-datanode:latest
+    container_name: datanode2
+    hostname: datanode2
+    restart: always
+    ports:
+      - 29866:29866
+      - 29864:29864
+    depends_on:
+      - namenode
+    volumes:
+      - ./data/hadoop/datanode/node_2:/hadoop/dfs/data
+    environment:
+      - HDFS_CONF_dfs_datanode_address=0.0.0.0:29866
+      - HDFS_CONF_dfs_datanode_http_address=0.0.0.0:29864
+      - SERVICE_PRECONDITION=namenode:9870
+    env_file:
+      - ./hadoop.env
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.4
+  datanode3:
+    image: haihp02/hadoop-datanode:latest
+    container_name: datanode3
+    hostname: datanode3
+    restart: always
+    ports:
+      - 39866:39866
+      - 39864:39864
+    depends_on:
+      - namenode
+    volumes:
+      - ./data/hadoop/datanode/node_3:/hadoop/dfs/data
+    environment:
+      - HDFS_CONF_dfs_datanode_address=0.0.0.0:39866
+      - HDFS_CONF_dfs_datanode_http_address=0.0.0.0:39864
+      - SERVICE_PRECONDITION=namenode:9870
+    env_file:
+      - ./hadoop.env
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.5
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    restart: always
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:19864 datanode2:29864 datanode3:39864 datanode1:19866 datanode2:29866 datanode3:39866"
+    env_file:
+      - ./hadoop.env
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.6
+  nodemanager:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: nodemanager
+    restart: always
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:19864 datanode2:29864 datanode3:39864 datanode1:19866 datanode2:29866 datanode3:39866 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.7
+  historyserver:
+    image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+    container_name: historyserver
+    restart: always
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:19864 datanode2:29864 datanode3:39864 datanode1:19866 datanode2:29866 datanode3:39866 resourcemanager:8088"
+    volumes:
+      - ./data/hadoop/historyserver:/hadoop/yarn/timeline
+    env_file:
+      - ./hadoop.env
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.8
+
+  # Kafka
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - '2181:2181'
+    restart: unless-stopped
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.21
+  kafka1:
+    image: wurstmeister/kafka
+    container_name: kafka1
+    ports:
+      - '9192:9092'
+      - '29194:29094'
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENERS: INSIDE://kafka1:29092,OUTSIDE://kafka1:9092
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka1:29092,OUTSIDE://172.24.181.57:9192
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "bds:3:3,guland:3:3"
+      KAFKA_LOG_RETENTION_HOURS: 6
+    volumes:
+      - ./data/kafka/node_1:/tmp/kafka-logs/
+    restart: unless-stopped
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.22
+  kafka2:
+    image: wurstmeister/kafka
+    container_name: kafka2
+    ports:
+      - '9292:9092'
+      - '29294:29094'
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_LISTENERS: INSIDE://kafka2:29092,OUTSIDE://kafka2:9092
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka2:29092,OUTSIDE://172.24.181.57:9292
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LOG_RETENTION_HOURS: 6
+    volumes:
+      - ./data/kafka/node_2:/tmp/kafka-logs/
+    restart: unless-stopped
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.23
+  kafka3:
+    image: wurstmeister/kafka
+    container_name: kafka3
+    ports:
+      - '9392:9092'
+      - '29394:29094'
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_LISTENERS: INSIDE://kafka3:29092,OUTSIDE://kafka3:9092
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka3:29092,OUTSIDE://172.24.181.57:9392
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LOG_RETENTION_HOURS: 6
+    volumes:
+      - ./data/kafka/node_3:/tmp/kafka-logs/
+    restart: unless-stopped
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.24
+
+# Spark
+  spark-master:
+    image: my-spark-3.4.2
+    container_name: spark-master
+    volumes:
+      - ./spark:/opt/bitnami/spark/work
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    ports:
+      - '8080:8080'
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.31
+  spark-worker-1:
+    image: my-spark-3.4.2
+    container_name: spark-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.32
+
+  spark-worker-2:
+    image: my-spark-3.4.2
+    container_name: spark-worker-2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.33
+
+  spark-worker-3:
+    image: my-spark-3.4.2
+    container_name: spark-worker-3
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.34
+
+# elasticsearch
+  es01:
+    image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
+    container_name: es01
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      node.name: es01
+      discovery.seed_hosts: es01,es02,es03
+      cluster.initial_master_nodes: es01,es02,es03
+      cluster.name: houses
+      bootstrap.memory_lock: "true"
+      http.cors.enabled: "true"
+      ES_JAVA_OPTS: -Xms256m -Xmx256m
+      ES_NODE_WAN_ONLY: "true"
+      HTTP_ENABLE: "true"
+    volumes:
+      - "./data/elasticsearch/node_1:/usr/share/elasticsearch/data"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://localhost:9200"]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.41
+
+  es02:
+    image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
+    container_name: es02
+    ports:
+      - "9201:9200"
+      - "9301:9300"
+    environment:
+      node.name: es02
+      discovery.seed_hosts: es01,es02,es03
+      cluster.initial_master_nodes: es01,es02,es03
+      cluster.name: houses
+      bootstrap.memory_lock: "true"
+      http.cors.enabled: "true"
+      ES_JAVA_OPTS: -Xms256m -Xmx256m
+      ES_NODE_WAN_ONLY: "true"
+      HTTP_ENABLE: "true"
+    volumes:
+      - "./data/elasticsearch/node_2:/usr/share/elasticsearch/data"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://localhost:9200"]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.42
+
+  es03:
+    image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2"
+    container_name: es03
+    ports:
+      - "9202:9200"
+      - "9303:9300"
+    environment:
+      node.name: es03
+      discovery.seed_hosts: es01,es02,es03
+      cluster.initial_master_nodes: es01,es02,es03
+      cluster.name: houses
+      bootstrap.memory_lock: "true"
+      http.cors.enabled: "true"
+      ES_JAVA_OPTS: -Xms256m -Xmx256m
+      ES_NODE_WAN_ONLY: "true"
+      HTTP_ENABLE: "true"
+    volumes:
+      - "./data/elasticsearch/node_3:/usr/share/elasticsearch/data"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://localhost:9200"]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.43
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana-oss:7.10.2
+    container_name: kibana
+    depends_on:
+      es01:
+        condition: service_healthy
+      es02:
+        condition: service_healthy
+      es03:
+        condition: service_healthy
+    ports:
+      - "5601:5601"
+    environment:
+      - 'ELASTICSEARCH_HOSTS=["http://es01:9200","http://es02:9200","http://es03:9200"]'
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.44
+
+networks:
+  spark-hdfs-network:
+    name: spark-hdfs-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
