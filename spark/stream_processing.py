@@ -326,6 +326,7 @@ schema = StructType([
     ]), nullable=True),
     StructField("link", StringType(), nullable=True),
     StructField("post_date", StringType(), nullable=True),
+    StructField("crawl_date", StringType(), nullable=True),
     StructField("post_id", StringType(), nullable=True),
     StructField("price", StringType(), nullable=True),
     StructField("square", DoubleType(), nullable=True),
