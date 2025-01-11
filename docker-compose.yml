@@ -81,6 +81,48 @@ services:
     networks:
       spark-hdfs-network:
         ipv4_address: 172.25.0.5
+  datanode4:
+    image: haihp02/hadoop-datanode:latest
+    container_name: datanode4
+    hostname: datanode4
+    restart: always
+    ports:
+      - 49866:49866
+      - 49864:49864
+    depends_on:
+      - namenode
+    volumes:
+      - ./data/hadoop/datanode/node_4:/hadoop/dfs/data
+    environment:
+      - HDFS_CONF_dfs_datanode_address=0.0.0.0:49866
+      - HDFS_CONF_dfs_datanode_http_address=0.0.0.0:49864
+      - SERVICE_PRECONDITION=namenode:9870
+    env_file:
+      - ./hadoop.env
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.9
+  datanode5:
+    image: haihp02/hadoop-datanode:latest
+    container_name: datanode5
+    hostname: datanode5
+    restart: always
+    ports:
+      - 59866:59866
+      - 59864:59864
+    depends_on:
+      - namenode
+    volumes:
+      - ./data/hadoop/datanode/node_5:/hadoop/dfs/data
+    environment:
+      - HDFS_CONF_dfs_datanode_address=0.0.0.0:59866
+      - HDFS_CONF_dfs_datanode_http_address=0.0.0.0:59864
+      - SERVICE_PRECONDITION=namenode:9870
+    env_file:
+      - ./hadoop.env
+    networks:
+      spark-hdfs-network:
+        ipv4_address: 172.25.0.10
   resourcemanager:
     image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
     container_name: resourcemanager

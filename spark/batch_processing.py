@@ -341,7 +341,7 @@ print("Extra infos processed.")
 es_config = {
     "es.nodes": "172.25.0.41,172.25.0.42,172.25.0.43",
     "es.port": "9200",
-    "es.resource": "houses_in_hanoi_from_batch_processing",
+    "es.resource": "houses_in_hanoi_from_batch_processing_3",
     "es.nodes.discovery": "false",
     "es.nodes.wan.only": "false",
 }

@@ -1,6 +1,6 @@
 # Crawler parameters
-export min_page=1;
-export max_page=2;
+export min_page=2;
+export max_page=100;
 export province="ha-noi";
 export jump_to_page=$min_page;
 
